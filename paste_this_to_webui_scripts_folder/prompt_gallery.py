@@ -544,6 +544,7 @@ def clean_select_picture(filename):
             os.remove(os.path.join(current_folder, file))
 
 def image_url(filedata):
+
     if type(filedata) == dict and filedata["is_file"]:
         filename = filedata["name"]
         tempdir = os.path.normpath(tempfile.gettempdir())
@@ -554,19 +555,35 @@ def image_url(filedata):
         clean_select_picture(os.path.basename(filename))
         return Image.open(filename)
 
+    elif type(filedata) == dict :
+        print(filedata)
+        print("Dict is not file.")
+        return 
+
+
     if type(filedata) == list:
+        print(filedata)
         if len(filedata) == 0:
             return None
 
-        filedata = filedata[0]
+        if  type(filedata) != dict and filedata.startswith("data:image/png;base64,"):
+            filedata = filedata[len("data:image/png;base64,"):]
 
-    if filedata.startswith("data:image/png;base64,"):
-        filedata = filedata[len("data:image/png;base64,"):]
+            filedata = base64.decodebytes(filedata.encode('utf-8'))
+            image = Image.open(io.BytesIO(filedata))
+            return image
+        for item in filedata:
+            if filedata["is_file"]:
+                filedata = item
+                filename = filedata["name"]
+                tempdir = os.path.normpath(tempfile.gettempdir())
+                normfn = os.path.normpath(filename)
+                assert normfn.startswith(tempdir), 'trying to open image file not in temporary directory'
 
-    filedata = base64.decodebytes(filedata.encode('utf-8'))
-    image = Image.open(io.BytesIO(filedata))
-    return image
-
+                image = Image.open(filename)
+                clean_select_picture(os.path.basename(filename))
+                return Image.open(filename)
+        
 
 def dropdown_change():
     global OUTPUTS, OUTPUTS_DICT
